@@ -1,3 +1,19 @@
+---
+title: "CITE-seq: Scrublet doublet removal"
+subtitle: "Amrute, Luo et al., Nature 635, 423-433 (2024) | doi:10.1038/s41586-024-08008-5"
+output: html_document
+---
+
+**Purpose.** Exports the annotated global object to h5ad for Scrublet (`05b`), then adds the doublet scores, removes cells with `scrublet_score >= 0.2` and re-clusters.
+
+**Inputs.** `../global_object/final_global_annotated.rds`; `./scrublet-scores/all.csv` (from `05b`).
+
+**Outputs.** `final_global_annotated.h5ad` (input to `05b`); filtered object `cor2` in session.
+
+**Run order.** Upstream: global annotation (not included). Downstream: `05b_scrublet_doublet_scores.ipynb`.
+
+Interactive analysis notebook: run chunk by chunk.
+
 ```{r}
 library(dplyr)
 library(Seurat)

@@ -1,3 +1,29 @@
+---
+title: "Mouse injury models mapped onto human fibroblast states"
+subtitle: "Amrute, Luo et al., Nature 635, 423-433 (2024) | doi:10.1038/s41586-024-08008-5"
+output: html_document
+---
+
+**Purpose.** Projects fibroblasts from three mouse models of cardiac injury (myocardial infarction, angiotensin II and TAC) onto the human fibroblast reference, compares state composition and prediction scores across time points and conditions, and re-clusters each model.
+
+**Inputs.** Human fibroblast reference; mouse fibroblast objects with human gene symbols (MI, AngII day 28, TAC).
+
+**Outputs.** `*_mapping/*_mapped.rds` and figure-panel PDFs (Fig. 3).
+
+**Run order.** Upstream: `human_citeseq/07`. Downstream: none.
+
+Interactive analysis notebook: run chunk by chunk.
+
+```{r setup}
+## ---- Shared helpers, paths and output folders (EDIT) ----
+repo_dir <- ".."   # EDIT: root of this repository
+source(file.path(repo_dir, "R", "utils.R"))
+# packages used below that were not loaded in the original notebook
+library(viridis)
+panel_dir <- "figure_panels"   # EDIT: folder for figure-panel PDFs (named after paper panels)
+dir.create(panel_dir, showWarnings = FALSE)
+```
+
 ```{r}
 library(dplyr)
 library(Seurat)
@@ -119,14 +145,14 @@ DimPlot(MI, reduction = 'ref.umap', group.by = 'predicted.celltype.l1', label.si
 
 #################
 ```{r}
-pdf("/Users/jamrute/Desktop/pdf_panels/3c_top.pdf", useDingbats = FALSE, width=10, height=4)
+pdf(file.path(panel_dir, "3c_top.pdf"), useDingbats = FALSE, width=10, height=4)
 DimPlot(ANG, reduction = 'ref.umap', group.by = 'predicted.celltype.l1', label.size = 4, label=FALSE,
         cols = paletteDiscrete(unique(fibroblast$functional.cluster), set = "stallion"), split.by = "condition")
 dev.off()
 ```
 
 ```{r}
-pdf("/Users/jamrute/Desktop/pdf_panels/3d_top.pdf", useDingbats = FALSE, width=6, height=4)
+pdf(file.path(panel_dir, "3d_top.pdf"), useDingbats = FALSE, width=6, height=4)
 FeaturePlot(ANG, features = c("POSTN+ Fib"),  reduction = "ref.umap", cols = c("lightgrey", "darkred"))
 dev.off()
 ```
@@ -140,10 +166,8 @@ DimPlot(MI, reduction = 'ref.umap', group.by = 'predicted.celltype.l1', label.si
 
 
 ```{r}
-ggplot(MI@meta.data, aes(x=stim, fill=predicted.celltype.l1)) + geom_bar(position = "fill") + theme_linedraw() + theme(axis.text.x = element_text(angle = 90)) +  scale_fill_manual(values=c("#D51F26","#272E6A","#208A42","#89288F","#8A9FD1","#C06CAB","#D8A767","#90D5E4","#89C75F","#F37B7D","#9983BD")) + theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.background = element_blank()) 
+plot_composition(MI@meta.data, x = "stim", fill = "predicted.celltype.l1",
+                 colors = c("#D51F26","#272E6A","#208A42","#89288F","#8A9FD1","#C06CAB","#D8A767","#90D5E4","#89C75F","#F37B7D","#9983BD"))
 ```
 
 ```{r} 
@@ -167,7 +191,7 @@ FeaturePlot(MI, features = c("ground state Fib","Myofibroblast","CCL2.THBS1 Fib"
 ```
 
 ```{r}
-pdf("/Users/jamrute/Desktop/pdf_panels/3a_bottom.pdf", useDingbats = FALSE, width=7, height=4)
+pdf(file.path(panel_dir, "3a_bottom.pdf"), useDingbats = FALSE, width=7, height=4)
 FeaturePlot(MI, features = c("POSTN+ Fib"),  reduction = "ref.umap", cols = c("lightgrey", "darkred"))
 dev.off()
 ```
@@ -237,10 +261,8 @@ ANG$condition <- factor(ANG$condition, levels = c("saline","angpe"), ordered = T
 ```
 
 ```{r}
-ggplot(ANG@meta.data, aes(x=condition, fill=predicted.celltype.l1)) + geom_bar(position = "fill") + theme_linedraw() + theme(axis.text.x = element_text(angle = 90)) +  scale_fill_manual(values=c("#D51F26","#272E6A","#208A42","#89288F","#F47D2B","#8A9FD1","#C06CAB","#D8A767","#90D5E4","#89C75F","#F37B7D","#9983BD")) + theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.background = element_blank()) 
+plot_composition(ANG@meta.data, x = "condition", fill = "predicted.celltype.l1",
+                 colors = c("#D51F26","#272E6A","#208A42","#89288F","#F47D2B","#8A9FD1","#C06CAB","#D8A767","#90D5E4","#89C75F","#F37B7D","#9983BD"))
 ```
 
 ```{r}
@@ -425,10 +447,8 @@ paletteDiscrete(unique(fibroblast$functional.cluster), set = "stallion")
 
 
 ```{r}
-ggplot(TAC@meta.data, aes(x=group, fill=predicted.celltype.l1)) + geom_bar(position = "fill") + theme_linedraw() + theme(axis.text.x = element_text(angle = 90)) +  scale_fill_manual(values=c("#D51F26","#272E6A","#208A42","#89288F","#8A9FD1","#C06CAB","#D8A767","#90D5E4","#89C75F","#F37B7D","#9983BD")) + theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.background = element_blank()) 
+plot_composition(TAC@meta.data, x = "group", fill = "predicted.celltype.l1",
+                 colors = c("#D51F26","#272E6A","#208A42","#89288F","#8A9FD1","#C06CAB","#D8A767","#90D5E4","#89C75F","#F37B7D","#9983BD"))
 ```
 
 ```{r}
@@ -468,21 +488,7 @@ DotPlot(TAC, feature = c("TBX20"), group.by = "group") + RotatedAxis()
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("COL1A1","PDGFRA","VIM","DCN")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$H1_z<-z_scores[1,]
+MI@meta.data$H1_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=MI, features = "H1_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 #H2
@@ -490,21 +496,7 @@ FeaturePlot(object=MI, features = "H1_z",pt.size=.5, reduction = 'ref.umap') + s
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("WIF1","DKK3","SFRP2","FRZB")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$H2_z<-z_scores[1,]
+MI@meta.data$H2_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=MI, features = "H2_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -513,21 +505,7 @@ FeaturePlot(object=MI, features = "H2_z",pt.size=.5, reduction = 'ref.umap') + s
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("CCL2","THBS1", "CCL11")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$InjuryResponse_z<-z_scores[1,]
+MI@meta.data$InjuryResponse_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=MI, features = "InjuryResponse_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -536,21 +514,7 @@ FeaturePlot(object=MI, features = "InjuryResponse_z",pt.size=.5, reduction = 're
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("ACTA2","CTHRC1","POSTN","FAP")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$Myofibroblast_z<-z_scores[1,]
+MI@meta.data$Myofibroblast_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=MI, features = "Myofibroblast_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -559,21 +523,7 @@ FeaturePlot(object=MI, features = "Myofibroblast_z",pt.size=.5, reduction = 'ref
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("COMP","CHAD","CLIP2")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$Matrifibrocyte_z<-z_scores[1,]
+MI@meta.data$Matrifibrocyte_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=MI, features = "Matrifibrocyte_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -582,21 +532,7 @@ FeaturePlot(object=MI, features = "Matrifibrocyte_z",pt.size=.5, reduction = 're
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("COL8A1","MEOX1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$LateResolution_z<-z_scores[1,]
+MI@meta.data$LateResolution_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=MI, features = "LateResolution_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -620,21 +556,7 @@ DotPlot(MI, features = c("H1_z","H2_z","InjuryResponse_z", "Myofibroblast_z","Ma
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("COL1A1","PDGFRA","VIM","DCN")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$H1_z<-z_scores[1,]
+fibroblast@meta.data$H1_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=fibroblast, features = "H1_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 #H2
@@ -642,21 +564,7 @@ FeaturePlot(object=fibroblast, features = "H1_z",pt.size=.5, reduction = 'umap')
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("WIF1","DKK3","SFRP2","FRZB")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$H2_z<-z_scores[1,]
+fibroblast@meta.data$H2_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=fibroblast, features = "H2_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -665,21 +573,7 @@ FeaturePlot(object=fibroblast, features = "H2_z",pt.size=.5, reduction = 'umap')
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("CCL2","THBS1", "CCL11")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$InjuryResponse_z<-z_scores[1,]
+fibroblast@meta.data$InjuryResponse_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=fibroblast, features = "InjuryResponse_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -688,21 +582,7 @@ FeaturePlot(object=fibroblast, features = "InjuryResponse_z",pt.size=.5, reducti
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("ACTA2","CTHRC1","POSTN","FAP")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$Myofibroblast_z<-z_scores[1,]
+fibroblast@meta.data$Myofibroblast_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=fibroblast, features = "Myofibroblast_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -711,21 +591,7 @@ FeaturePlot(object=fibroblast, features = "Myofibroblast_z",pt.size=.5, reductio
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("COMP","CHAD","CLIP2")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$Matrifibrocyte_z<-z_scores[1,]
+fibroblast@meta.data$Matrifibrocyte_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=fibroblast, features = "Matrifibrocyte_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -734,21 +600,7 @@ FeaturePlot(object=fibroblast, features = "Matrifibrocyte_z",pt.size=.5, reducti
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("COL8A1","MEOX1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$LateResolution_z<-z_scores[1,]
+fibroblast@meta.data$LateResolution_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=fibroblast, features = "LateResolution_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 ```{r}
@@ -762,21 +614,7 @@ DotPlot(fibroblast, features = c("H1_z","H2_z","InjuryResponse_z", "Myofibroblas
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("COL1A1","PDGFRA","VIM","DCN")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$H1_z<-z_scores[1,]
+ANG@meta.data$H1_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=ANG, features = "H1_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 #H2
@@ -784,21 +622,7 @@ FeaturePlot(object=ANG, features = "H1_z",pt.size=.5, reduction = 'ref.umap') + 
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("WIF1","DKK3","SFRP2","FRZB")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$H2_z<-z_scores[1,]
+ANG@meta.data$H2_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=ANG, features = "H2_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -807,21 +631,7 @@ FeaturePlot(object=ANG, features = "H2_z",pt.size=.5, reduction = 'ref.umap') + 
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("CCL2","THBS1", "CCL11")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$InjuryResponse_z<-z_scores[1,]
+ANG@meta.data$InjuryResponse_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=ANG, features = "InjuryResponse_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -830,21 +640,7 @@ FeaturePlot(object=ANG, features = "InjuryResponse_z",pt.size=.5, reduction = 'r
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("ACTA2","CTHRC1","POSTN","FAP")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$Myofibroblast_z<-z_scores[1,]
+ANG@meta.data$Myofibroblast_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=ANG, features = "Myofibroblast_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -853,21 +649,7 @@ FeaturePlot(object=ANG, features = "Myofibroblast_z",pt.size=.5, reduction = 're
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("COMP","CHAD","CLIP2")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$Matrifibrocyte_z<-z_scores[1,]
+ANG@meta.data$Matrifibrocyte_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=ANG, features = "Matrifibrocyte_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -876,21 +658,7 @@ FeaturePlot(object=ANG, features = "Matrifibrocyte_z",pt.size=.5, reduction = 'r
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("COL8A1","MEOX1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$LateResolution_z<-z_scores[1,]
+ANG@meta.data$LateResolution_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=ANG, features = "LateResolution_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -921,21 +689,7 @@ TAC <- subset(TAC, idents = c("Sham","TAC"))
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("COL1A1","PDGFRA","VIM","DCN")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$H1_z<-z_scores[1,]
+TAC@meta.data$H1_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=TAC, features = "H1_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 #H2
@@ -943,21 +697,7 @@ FeaturePlot(object=TAC, features = "H1_z",pt.size=.5, reduction = 'ref.umap') + 
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("WIF1","DKK3","SFRP2","FRZB")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$H2_z<-z_scores[1,]
+TAC@meta.data$H2_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=TAC, features = "H2_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -966,21 +706,7 @@ FeaturePlot(object=TAC, features = "H2_z",pt.size=.5, reduction = 'ref.umap') + 
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("CCL2","THBS1", "CCL11")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$InjuryResponse_z<-z_scores[1,]
+TAC@meta.data$InjuryResponse_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=TAC, features = "InjuryResponse_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -989,21 +715,7 @@ FeaturePlot(object=TAC, features = "InjuryResponse_z",pt.size=.5, reduction = 'r
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("ACTA2","CTHRC1","POSTN","FAP")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$Myofibroblast_z<-z_scores[1,]
+TAC@meta.data$Myofibroblast_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=TAC, features = "Myofibroblast_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -1012,21 +724,7 @@ FeaturePlot(object=TAC, features = "Myofibroblast_z",pt.size=.5, reduction = 're
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("COMP","CHAD","CLIP2")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$Matrifibrocyte_z<-z_scores[1,]
+TAC@meta.data$Matrifibrocyte_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=TAC, features = "Matrifibrocyte_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -1035,21 +733,7 @@ FeaturePlot(object=TAC, features = "Matrifibrocyte_z",pt.size=.5, reduction = 'r
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("COL8A1","MEOX1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$LateResolution_z<-z_scores[1,]
+TAC@meta.data$LateResolution_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=TAC, features = "LateResolution_z",pt.size=.5, reduction = 'ref.umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -1248,21 +932,7 @@ pheatmap(sample.averageexpression, scale="none", col=viridis(240), cexCol=0.5, c
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("PI16","CCDC80", "FBLN1", "SVEP1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$F1<-z_scores[1,]
+MI@meta.data$F1 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # Myofib
@@ -1270,21 +940,7 @@ MI@meta.data$F1<-z_scores[1,]
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("ACTA2","TAGLN")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$F2<-z_scores[1,]
+MI@meta.data$F2 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # CCL2/THBS1
@@ -1292,21 +948,7 @@ MI@meta.data$F2<-z_scores[1,]
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("CCL2","CCL11","THBS1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$F3<-z_scores[1,]
+MI@meta.data$F3 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # APOE Fib
@@ -1314,21 +956,7 @@ MI@meta.data$F3<-z_scores[1,]
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("APOE","AGT","RGS5")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$F4<-z_scores[1,]
+MI@meta.data$F4 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # DLK1 Fib
@@ -1336,21 +964,7 @@ MI@meta.data$F4<-z_scores[1,]
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("DLK1","GPX3")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$F5<-z_scores[1,]
+MI@meta.data$F5 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PTGDS Fib
@@ -1358,21 +972,7 @@ MI@meta.data$F5<-z_scores[1,]
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("PTGDS","GPC3")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$F6<-z_scores[1,]
+MI@meta.data$F6 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # APOD Fib
@@ -1380,21 +980,7 @@ MI@meta.data$F6<-z_scores[1,]
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("APOD","IGFBP5")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$F7<-z_scores[1,]
+MI@meta.data$F7 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # GDF15 Fib
@@ -1402,21 +988,7 @@ MI@meta.data$F7<-z_scores[1,]
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("ATF5","SLC3A2","TRIB3","GDF15")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$F8<-z_scores[1,]
+MI@meta.data$F8 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # POSTN/FAP Fib
@@ -1424,21 +996,7 @@ MI@meta.data$F8<-z_scores[1,]
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("POSTN","COMP","FAP","COL1A1","THBS4","COL3A1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$F9<-z_scores[1,]
+MI@meta.data$F9 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # IFN
@@ -1446,21 +1004,7 @@ MI@meta.data$F9<-z_scores[1,]
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("ISG15", "MX1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$F10<-z_scores[1,]
+MI@meta.data$F10 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PLA2G2A
@@ -1468,21 +1012,7 @@ MI@meta.data$F10<-z_scores[1,]
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("PLA2G2A", "CFD")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$F11<-z_scores[1,]
+MI@meta.data$F11 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PCOLCE2
@@ -1490,21 +1020,7 @@ MI@meta.data$F11<-z_scores[1,]
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("PCOLCE2", "IGFBP6")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$F12<-z_scores[1,]
+MI@meta.data$F12 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PRG4
@@ -1512,21 +1028,7 @@ MI@meta.data$F12<-z_scores[1,]
 DefaultAssay(MI) <- "SCT"
 expdata <- GetAssayData(MI)
 Pop1 <- c("PRG4", "CXCL14")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-MI@meta.data$F13<-z_scores[1,]
+MI@meta.data$F13 <- gene_set_zscore(expdata, Pop1)
 ```
 
 
@@ -1538,21 +1040,7 @@ MI@meta.data$F13<-z_scores[1,]
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("PI16","CCDC80", "FBLN1", "SVEP1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$F1<-z_scores[1,]
+ANG@meta.data$F1 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # Myofib
@@ -1560,21 +1048,7 @@ ANG@meta.data$F1<-z_scores[1,]
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("ACTA2","TAGLN")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$F2<-z_scores[1,]
+ANG@meta.data$F2 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # CCL2/THBS1
@@ -1582,21 +1056,7 @@ ANG@meta.data$F2<-z_scores[1,]
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("CCL2","CCL11","THBS1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$F3<-z_scores[1,]
+ANG@meta.data$F3 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # APOE Fib
@@ -1604,21 +1064,7 @@ ANG@meta.data$F3<-z_scores[1,]
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("APOE","AGT","RGS5")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$F4<-z_scores[1,]
+ANG@meta.data$F4 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # DLK1 Fib
@@ -1626,21 +1072,7 @@ ANG@meta.data$F4<-z_scores[1,]
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("DLK1","GPX3")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$F5<-z_scores[1,]
+ANG@meta.data$F5 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PTGDS Fib
@@ -1648,21 +1080,7 @@ ANG@meta.data$F5<-z_scores[1,]
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("PTGDS","GPC3")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$F6<-z_scores[1,]
+ANG@meta.data$F6 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # APOD Fib
@@ -1670,21 +1088,7 @@ ANG@meta.data$F6<-z_scores[1,]
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("APOD","IGFBP5")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$F7<-z_scores[1,]
+ANG@meta.data$F7 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # GDF15 Fib
@@ -1692,21 +1096,7 @@ ANG@meta.data$F7<-z_scores[1,]
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("ATF5","SLC3A2","TRIB3","GDF15")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$F8<-z_scores[1,]
+ANG@meta.data$F8 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # POSTN/FAP Fib
@@ -1714,21 +1104,7 @@ ANG@meta.data$F8<-z_scores[1,]
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("POSTN","COMP","FAP","COL1A1","THBS4","COL3A1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$F9<-z_scores[1,]
+ANG@meta.data$F9 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # IFN
@@ -1736,21 +1112,7 @@ ANG@meta.data$F9<-z_scores[1,]
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("ISG15", "MX1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$F10<-z_scores[1,]
+ANG@meta.data$F10 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PLA2G2A
@@ -1758,21 +1120,7 @@ ANG@meta.data$F10<-z_scores[1,]
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("PLA2G2A", "CFD")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$F11<-z_scores[1,]
+ANG@meta.data$F11 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PCOLCE2
@@ -1780,21 +1128,7 @@ ANG@meta.data$F11<-z_scores[1,]
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("PCOLCE2", "IGFBP6")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$F12<-z_scores[1,]
+ANG@meta.data$F12 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PRG4
@@ -1802,21 +1136,7 @@ ANG@meta.data$F12<-z_scores[1,]
 DefaultAssay(ANG) <- "SCT"
 expdata <- GetAssayData(ANG)
 Pop1 <- c("PRG4", "CXCL14")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-ANG@meta.data$F13<-z_scores[1,]
+ANG@meta.data$F13 <- gene_set_zscore(expdata, Pop1)
 ```
 
 
@@ -1829,21 +1149,7 @@ ANG@meta.data$F13<-z_scores[1,]
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("PI16","CCDC80", "FBLN1", "SVEP1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$F1<-z_scores[1,]
+TAC@meta.data$F1 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # Myofib
@@ -1851,21 +1157,7 @@ TAC@meta.data$F1<-z_scores[1,]
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("ACTA2","TAGLN")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$F2<-z_scores[1,]
+TAC@meta.data$F2 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # CCL2/THBS1
@@ -1873,21 +1165,7 @@ TAC@meta.data$F2<-z_scores[1,]
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("CCL2","CCL11","THBS1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$F3<-z_scores[1,]
+TAC@meta.data$F3 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # APOE Fib
@@ -1895,21 +1173,7 @@ TAC@meta.data$F3<-z_scores[1,]
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("APOE","AGT","RGS5")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$F4<-z_scores[1,]
+TAC@meta.data$F4 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # DLK1 Fib
@@ -1917,21 +1181,7 @@ TAC@meta.data$F4<-z_scores[1,]
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("DLK1","GPX3")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$F5<-z_scores[1,]
+TAC@meta.data$F5 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PTGDS Fib
@@ -1939,21 +1189,7 @@ TAC@meta.data$F5<-z_scores[1,]
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("PTGDS","GPC3")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$F6<-z_scores[1,]
+TAC@meta.data$F6 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # APOD Fib
@@ -1961,21 +1197,7 @@ TAC@meta.data$F6<-z_scores[1,]
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("APOD","IGFBP5")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$F7<-z_scores[1,]
+TAC@meta.data$F7 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # GDF15 Fib
@@ -1983,21 +1205,7 @@ TAC@meta.data$F7<-z_scores[1,]
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("ATF5","SLC3A2","TRIB3","GDF15")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$F8<-z_scores[1,]
+TAC@meta.data$F8 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # POSTN/FAP Fib
@@ -2005,21 +1213,7 @@ TAC@meta.data$F8<-z_scores[1,]
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("POSTN","COMP","FAP","COL1A1","THBS4","COL3A1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$F9<-z_scores[1,]
+TAC@meta.data$F9 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # IFN
@@ -2027,21 +1221,7 @@ TAC@meta.data$F9<-z_scores[1,]
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("ISG15", "MX1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$F10<-z_scores[1,]
+TAC@meta.data$F10 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PLA2G2A
@@ -2049,21 +1229,7 @@ TAC@meta.data$F10<-z_scores[1,]
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("PLA2G2A", "CFD")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$F11<-z_scores[1,]
+TAC@meta.data$F11 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PCOLCE2
@@ -2071,21 +1237,7 @@ TAC@meta.data$F11<-z_scores[1,]
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("PCOLCE2", "IGFBP6")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$F12<-z_scores[1,]
+TAC@meta.data$F12 <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PRG4
@@ -2093,21 +1245,7 @@ TAC@meta.data$F12<-z_scores[1,]
 DefaultAssay(TAC) <- "SCT"
 expdata <- GetAssayData(TAC)
 Pop1 <- c("PRG4", "CXCL14")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-TAC@meta.data$F13<-z_scores[1,]
+TAC@meta.data$F13 <- gene_set_zscore(expdata, Pop1)
 ```
 
 

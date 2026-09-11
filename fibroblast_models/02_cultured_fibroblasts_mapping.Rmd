@@ -1,3 +1,28 @@
+---
+title: "Cultured fibroblasts mapped onto human fibroblast states"
+subtitle: "Amrute, Luo et al., Nature 635, 423-433 (2024) | doi:10.1038/s41586-024-08008-5"
+output: html_document
+---
+
+**Purpose.** Projects cultured human cardiac fibroblasts (NHCF), dermal fibroblasts (NHDF) and iPSC-derived cardiac fibroblasts (iHCF) onto the human fibroblast reference and compares them with the in vivo states, including positive and negative control mappings.
+
+**Inputs.** Human fibroblast reference; `./NHCF/NHCF.rds`, `./NHDF/NHDF.rds`, `./iHCF/iHCF.rds`; global CITE-seq object.
+
+**Outputs.** `*/mapping/*_mapped.rds`, control-mapping objects.
+
+**Run order.** Upstream: `human_citeseq/07`. Downstream: none.
+
+Interactive analysis notebook: run chunk by chunk.
+
+```{r setup}
+## ---- Shared helpers, paths and output folders (EDIT) ----
+repo_dir <- ".."   # EDIT: root of this repository
+source(file.path(repo_dir, "R", "utils.R"))
+# packages used below that were not loaded in the original notebook
+library(viridis)
+global_annotated_rds <- "path/to/final_global_annotated.rds"   # EDIT: annotated global CITE-seq object
+```
+
 ```{r}
 library(dplyr)
 library(Seurat)
@@ -106,10 +131,8 @@ paletteDiscrete(unique(fibroblast$functional.cluster), set = "stallion")
 ```
 
 ```{r}
-ggplot(NHCF@meta.data, aes(x=group, fill=predicted.celltype.l1)) + geom_bar(position = "fill") + theme_linedraw() + theme(axis.text.x = element_text(angle = 90)) +  scale_fill_manual(values=c("#D51F26","#272E6A","#208A42","#89288F","#C06CAB","#D8A767","#89C75F")) + theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.background = element_blank()) 
+plot_composition(NHCF@meta.data, x = "group", fill = "predicted.celltype.l1",
+                 colors = c("#D51F26","#272E6A","#208A42","#89288F","#C06CAB","#D8A767","#89C75F"))
 ```
 
 ```{r}
@@ -187,10 +210,8 @@ paletteDiscrete(unique(fibroblast$functional.cluster), set = "stallion")
 ```
 
 ```{r}
-ggplot(NHDF@meta.data, aes(x=group, fill=predicted.celltype.l1)) + geom_bar(position = "fill") + theme_linedraw() + theme(axis.text.x = element_text(angle = 90)) + scale_fill_manual(values=c("#D51F26","#272E6A","#208A42","#89288F","#FEE500","#8A9FD1","#C06CAB","#D8A767","#90D5E4","#F37B7D")) + theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.background = element_blank()) 
+plot_composition(NHDF@meta.data, x = "group", fill = "predicted.celltype.l1",
+                 colors = c("#D51F26","#272E6A","#208A42","#89288F","#FEE500","#8A9FD1","#C06CAB","#D8A767","#90D5E4","#F37B7D"))
 ```
 
 ```{r}
@@ -270,10 +291,8 @@ paletteDiscrete(unique(fibroblast$functional.cluster), set = "stallion")
 ```
 
 ```{r}
-ggplot(iHCF@meta.data, aes(x=group, fill=predicted.celltype.l1)) + geom_bar(position = "fill") + theme_linedraw() + theme(axis.text.x = element_text(angle = 90)) + scale_fill_manual(values=c("#D51F26","#272E6A","#208A42","#89288F","#C06CAB","#D8A767","#90D5E4","#89C75F","#9983BD")) + theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.background = element_blank()) 
+plot_composition(iHCF@meta.data, x = "group", fill = "predicted.celltype.l1",
+                 colors = c("#D51F26","#272E6A","#208A42","#89288F","#C06CAB","#D8A767","#90D5E4","#89C75F","#9983BD"))
 ```
 
 ```{r}
@@ -311,21 +330,7 @@ FeaturePlot(iHCF, features = c("POSTN+ Fib"),  reduction = "ref.umap", cols = c(
 DefaultAssay(NHCF) <- "SCT"
 expdata <- GetAssayData(NHCF)
 Pop1 <- c("COL1A1","PDGFRA","VIM","DCN")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-NHCF@meta.data$H1_z<-z_scores[1,]
+NHCF@meta.data$H1_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=NHCF, features = "H1_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -333,21 +338,7 @@ FeaturePlot(object=NHCF, features = "H1_z",pt.size=.5, reduction = 'umap') + sca
 DefaultAssay(NHCF) <- "SCT"
 expdata <- GetAssayData(NHCF)
 Pop1 <- c("WIF1","DKK3","SFRP2","FRZB")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-NHCF@meta.data$H2_z<-z_scores[1,]
+NHCF@meta.data$H2_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=NHCF, features = "H2_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -356,21 +347,7 @@ FeaturePlot(object=NHCF, features = "H2_z",pt.size=.5, reduction = 'umap') + sca
 DefaultAssay(NHCF) <- "SCT"
 expdata <- GetAssayData(NHCF)
 Pop1 <- c("MT1-2","CCL2","CXCL1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-NHCF@meta.data$InjuryResponse_z<-z_scores[1,]
+NHCF@meta.data$InjuryResponse_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=NHCF, features = "InjuryResponse_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -379,21 +356,7 @@ FeaturePlot(object=NHCF, features = "InjuryResponse_z",pt.size=.5, reduction = '
 DefaultAssay(NHCF) <- "SCT"
 expdata <- GetAssayData(NHCF)
 Pop1 <- c("ACTA2","CTHRC1","POSTN","FAP")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-NHCF@meta.data$Myofibroblast_z<-z_scores[1,]
+NHCF@meta.data$Myofibroblast_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=NHCF, features = "Myofibroblast_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -402,21 +365,7 @@ FeaturePlot(object=NHCF, features = "Myofibroblast_z",pt.size=.5, reduction = 'u
 DefaultAssay(NHCF) <- "SCT"
 expdata <- GetAssayData(NHCF)
 Pop1 <- c("COMP","CHAD","CLIP2")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-NHCF@meta.data$Matrifibrocyte_z<-z_scores[1,]
+NHCF@meta.data$Matrifibrocyte_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=NHCF, features = "Matrifibrocyte_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -425,21 +374,7 @@ FeaturePlot(object=NHCF, features = "Matrifibrocyte_z",pt.size=.5, reduction = '
 DefaultAssay(NHCF) <- "SCT"
 expdata <- GetAssayData(NHCF)
 Pop1 <- c("COL8A1","MEOX1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-NHCF@meta.data$LateResolution_z<-z_scores[1,]
+NHCF@meta.data$LateResolution_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=NHCF, features = "LateResolution_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -463,21 +398,7 @@ VlnPlot(NHCF, features = c("H1_z","H2_z","InjuryResponse_z","Myofibroblast_z","M
 DefaultAssay(NHDF) <- "SCT"
 expdata <- GetAssayData(NHDF)
 Pop1 <- c("COL1A1","PDGFRA","VIM","DCN")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-NHDF@meta.data$H1_z<-z_scores[1,]
+NHDF@meta.data$H1_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=NHDF, features = "H1_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -485,21 +406,7 @@ FeaturePlot(object=NHDF, features = "H1_z",pt.size=.5, reduction = 'umap') + sca
 DefaultAssay(NHDF) <- "SCT"
 expdata <- GetAssayData(NHDF)
 Pop1 <- c("WIF1","DKK3","SFRP2","FRZB")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-NHDF@meta.data$H2_z<-z_scores[1,]
+NHDF@meta.data$H2_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=NHDF, features = "H2_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -508,21 +415,7 @@ FeaturePlot(object=NHDF, features = "H2_z",pt.size=.5, reduction = 'umap') + sca
 DefaultAssay(NHDF) <- "SCT"
 expdata <- GetAssayData(NHDF)
 Pop1 <- c("MT1-2","CCL2","CXCL1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-NHDF@meta.data$InjuryResponse_z<-z_scores[1,]
+NHDF@meta.data$InjuryResponse_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=NHDF, features = "InjuryResponse_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -531,21 +424,7 @@ FeaturePlot(object=NHDF, features = "InjuryResponse_z",pt.size=.5, reduction = '
 DefaultAssay(NHDF) <- "SCT"
 expdata <- GetAssayData(NHDF)
 Pop1 <- c("ACTA2","CTHRC1","POSTN","FAP")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-NHDF@meta.data$Myofibroblast_z<-z_scores[1,]
+NHDF@meta.data$Myofibroblast_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=NHDF, features = "Myofibroblast_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -554,21 +433,7 @@ FeaturePlot(object=NHDF, features = "Myofibroblast_z",pt.size=.5, reduction = 'u
 DefaultAssay(NHDF) <- "SCT"
 expdata <- GetAssayData(NHDF)
 Pop1 <- c("COMP","CHAD","CLIP2")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-NHDF@meta.data$Matrifibrocyte_z<-z_scores[1,]
+NHDF@meta.data$Matrifibrocyte_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=NHDF, features = "Matrifibrocyte_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -577,21 +442,7 @@ FeaturePlot(object=NHDF, features = "Matrifibrocyte_z",pt.size=.5, reduction = '
 DefaultAssay(NHDF) <- "SCT"
 expdata <- GetAssayData(NHDF)
 Pop1 <- c("COL8A1","MEOX1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-NHDF@meta.data$LateResolution_z<-z_scores[1,]
+NHDF@meta.data$LateResolution_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=NHDF, features = "LateResolution_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -611,21 +462,7 @@ VlnPlot(NHDF, features = c("H1_z","H2_z","InjuryResponse_z","Myofibroblast_z","M
 DefaultAssay(iHCF) <- "SCT"
 expdata <- GetAssayData(iHCF)
 Pop1 <- c("COL1A1","PDGFRA","VIM","DCN")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-iHCF@meta.data$H1_z<-z_scores[1,]
+iHCF@meta.data$H1_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=iHCF, features = "H1_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 #H2
@@ -633,21 +470,7 @@ FeaturePlot(object=iHCF, features = "H1_z",pt.size=.5, reduction = 'umap') + sca
 DefaultAssay(iHCF) <- "SCT"
 expdata <- GetAssayData(iHCF)
 Pop1 <- c("WIF1","DKK3","SFRP2","FRZB")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-iHCF@meta.data$H2_z<-z_scores[1,]
+iHCF@meta.data$H2_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=iHCF, features = "H2_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -656,21 +479,7 @@ FeaturePlot(object=iHCF, features = "H2_z",pt.size=.5, reduction = 'umap') + sca
 DefaultAssay(iHCF) <- "SCT"
 expdata <- GetAssayData(iHCF)
 Pop1 <- c("MT1-2","CCL2","CXCL1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-iHCF@meta.data$InjuryResponse_z<-z_scores[1,]
+iHCF@meta.data$InjuryResponse_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=iHCF, features = "InjuryResponse_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -679,21 +488,7 @@ FeaturePlot(object=iHCF, features = "InjuryResponse_z",pt.size=.5, reduction = '
 DefaultAssay(iHCF) <- "SCT"
 expdata <- GetAssayData(iHCF)
 Pop1 <- c("ACTA2","CTHRC1","POSTN","FAP")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-iHCF@meta.data$Myofibroblast_z<-z_scores[1,]
+iHCF@meta.data$Myofibroblast_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=iHCF, features = "Myofibroblast_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -702,21 +497,7 @@ FeaturePlot(object=iHCF, features = "Myofibroblast_z",pt.size=.5, reduction = 'u
 DefaultAssay(iHCF) <- "SCT"
 expdata <- GetAssayData(iHCF)
 Pop1 <- c("COMP","CHAD","CLIP2")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-iHCF@meta.data$Matrifibrocyte_z<-z_scores[1,]
+iHCF@meta.data$Matrifibrocyte_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=iHCF, features = "Matrifibrocyte_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -725,21 +506,7 @@ FeaturePlot(object=iHCF, features = "Matrifibrocyte_z",pt.size=.5, reduction = '
 DefaultAssay(iHCF) <- "SCT"
 expdata <- GetAssayData(iHCF)
 Pop1 <- c("COL8A1","MEOX1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-iHCF@meta.data$LateResolution_z<-z_scores[1,]
+iHCF@meta.data$LateResolution_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=iHCF, features = "LateResolution_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1))
 ```
 
@@ -866,7 +633,7 @@ RidgePlot(fibroblast_sampled, features = "predicted.celltype.l1.score")
 
 
 ```{r}
-global <- readRDS("/Users/jamrute/Library/CloudStorage/Box-Box/Macbook_Files/Grad_School/Primary_Projects/Amgen_Heart/Amgen_ICM_CITEseq/Human_CITEseq/global_object/final_global_annotated.rds")
+global <- readRDS(global_annotated_rds)
 ```
 
 # Endothelium

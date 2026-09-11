@@ -1,3 +1,19 @@
+---
+title: "CITE-seq: sample metadata and Harmony integration"
+subtitle: "Amrute, Luo et al., Nature 635, 423-433 (2024) | doi:10.1038/s41586-024-08008-5"
+output: html_document
+---
+
+**Purpose.** Adds sample-level clinical metadata, orders samples and HF etiologies, integrates samples with Harmony on the SCT PCA and estimates the number of informative PCs.
+
+**Inputs.** `../normalized.rds` (from `02`), `./sample_metadata.csv`.
+
+**Outputs.** `normalized_harmony.rds`
+
+**Run order.** Upstream: `02_rna_protein_normalization.R`. Downstream: `04_wnn_clustering.R`.
+
+Interactive analysis notebook: run chunk by chunk.
+
 ```{r}
 library(dplyr)
 library(Seurat)

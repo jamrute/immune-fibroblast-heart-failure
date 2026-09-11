@@ -1,3 +1,19 @@
+---
+title: "CITE-seq: pseudobulk differential expression, donor vs HF"
+subtitle: "Amrute, Luo et al., Nature 635, 423-433 (2024) | doi:10.1038/s41586-024-08008-5"
+output: html_document
+---
+
+**Purpose.** Aggregates counts per sample and cell type and tests donor vs heart failure with DESeq2 for each major cell type, with PCA plots per cell type.
+
+**Inputs.** `../global_object/final_global_annotated.rds`.
+
+**Outputs.** DE tables per cell type (e.g. `Fibroblast_Donor_vs_HF_all_genes.csv`, `..._sig_genes.csv`).
+
+**Run order.** Upstream: `05a`. Downstream: `07_fibroblast_states.Rmd`, `spatial/03`.
+
+Interactive analysis notebook: run chunk by chunk.
+
 ```{r}
 # Load libraries
 library(scater)

@@ -1,0 +1,28 @@
+# Data and intermediate objects (large; obtain from GEO / regenerate)
+*.rds
+*.RData
+*.h5
+*.h5ad
+*.h5Seurat
+*.h5seurat
+*.arrow
+*.bw
+data/
+figure_panels/
+Save-proj*/
+ArchRLogs/
+
+# R / RStudio / knitr
+.Rhistory
+.Rproj.user/
+*.Rproj
+*_cache/
+*_files/
+*.html
+
+# Python / Jupyter
+__pycache__/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store

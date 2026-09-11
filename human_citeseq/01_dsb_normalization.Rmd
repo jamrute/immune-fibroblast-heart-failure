@@ -1,3 +1,19 @@
+---
+title: "CITE-seq: droplet QC and dsb protein normalization"
+subtitle: "Amrute, Luo et al., Nature 635, 423-433 (2024) | doi:10.1038/s41586-024-08008-5"
+output: html_document
+---
+
+**Purpose.** Reads raw and filtered Cell Ranger matrices for each CITE-seq library, filters cell-containing and background droplets on QC metrics, normalizes antibody counts with dsb (background and isotype-control denoising) and builds a Seurat object with RNA and dsb-normalized protein.
+
+**Inputs.** Cell Ranger output for each library (`dataset_loc`).
+
+**Outputs.** `preprocessed.myo.22samples.rds`
+
+**Run order.** Upstream: none (first step). Downstream: `02_rna_protein_normalization.R`.
+
+Interactive analysis notebook: run chunk by chunk.
+
 ```{r}
 library(dsb)
 library(Seurat) 
@@ -10,7 +26,7 @@ library(cowplot)
 #Cell Ranger provides a function cellranger aggr that will combine multiple samples into a single matrix file. However, when processing data in R and Seurat this is unnecessary and we can aggregate them in R.
 
 ## Dataset for analysis
-dataset_loc <- "/gau/isilon/int/xluo/Project/WashU.Kory.SCRNASeq/citeseq.all/Myo"
+dataset_loc <- "path/to/cellranger/citeseq"   # EDIT: Cell Ranger output folders
 ids <- c("sample13","sample28","sample32","sample33","sample34","sample39","sample41","sample4","sample5","sample8","sample42","sample1", "sample2","sample12","sample17","sample27","sample6","sample7","sample9","sample15","sample29","sample30")
 
 raw.GE.data <- sapply(ids, function(i){

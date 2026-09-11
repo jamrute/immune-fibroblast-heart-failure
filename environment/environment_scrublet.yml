@@ -1,0 +1,19 @@
+# Environment for human_citeseq/05b_scrublet_doublet_scores.ipynb
+name: il1b-scrublet
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.8
+  - numpy
+  - pandas
+  - scipy
+  - seaborn
+  - scanpy
+  - anndata
+  - python-louvain
+  - louvain
+  - jupyterlab
+  - pip
+  - pip:
+      - scrublet

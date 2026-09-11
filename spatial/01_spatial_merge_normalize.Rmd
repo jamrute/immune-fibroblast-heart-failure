@@ -1,0 +1,53 @@
+---
+title: "Visium: load, normalize and merge sections"
+subtitle: "Amrute, Luo et al., Nature 635, 423-433 (2024) | doi:10.1038/s41586-024-08008-5"
+output: html_document
+---
+
+**Purpose.** Loads the 28 Visium sections listed in `metadata/spatial_samples.csv`, adds section metadata (patient, zone, days after MI, disease), normalizes each with SCTransform and merges them.
+
+**Inputs.** `./converted_for_seurat/*.h5seurat`; `metadata/spatial_samples.csv`.
+
+**Outputs.** `spatial_merged_normalized.rds`
+
+**Run order.** Upstream: none (spatial data from Kuppe et al., Nature 2022). Downstream: `02_spatial_integrate.R`.
+
+Interactive analysis notebook: run chunk by chunk.
+
+```{r setup}
+## ---- Shared helpers, paths and output folders (EDIT) ----
+repo_dir <- ".."   # EDIT: root of this repository
+source(file.path(repo_dir, "R", "utils.R"))
+```
+
+```{r}
+library(Seurat)
+library(dplyr)
+library(harmony)
+library(SeuratDisk)
+```
+
+```{r}
+# Load and SCTransform every section listed in metadata/spatial_samples.csv;
+# section metadata (sample, patient, zone, days after MI, disease) comes from the sheet
+sheet <- read_sample_sheet(file.path(repo_dir, "metadata", "spatial_samples.csv"))
+sections <- load_visium_samples(sheet, data_dir = "./converted_for_seurat")
+```
+
+```{r}
+sample <- merge(sections[[1]], y = sections[-1])
+
+DefaultAssay(sample) <- "SCT"
+# Union of the per-section variable features, in section order
+VariableFeatures(sample) <- unlist(lapply(sections, VariableFeatures), use.names = FALSE)
+```
+
+```{r}
+saveRDS(sample, "./spatial_merged_normalized.rds")
+```
+
+```{r}
+
+```
+
+
