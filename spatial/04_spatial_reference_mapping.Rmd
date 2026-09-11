@@ -1,3 +1,26 @@
+---
+title: "Visium: reference mapping of selected sections"
+subtitle: "Amrute, Luo et al., Nature 635, 423-433 (2024) | doi:10.1038/s41586-024-08008-5"
+output: html_document
+---
+
+**Purpose.** Maps selected Visium sections (donor and 2 days to 153 days after MI) onto an annotated snRNA-seq heart failure atlas, transfers cell-type scores and scores fibroblast states per section.
+
+**Inputs.** `./converted_for_seurat/*.h5ad`; annotated snRNA-seq atlas (reference).
+
+**Outputs.** `*_mapped.rds` per section and plots.
+
+**Run order.** Upstream: `01`. Downstream: `05_spatial_feature_plots.Rmd`.
+
+Interactive analysis notebook: run chunk by chunk.
+
+```{r setup}
+## ---- Shared helpers, paths and output folders (EDIT) ----
+repo_dir <- ".."   # EDIT: root of this repository
+source(file.path(repo_dir, "R", "utils.R"))
+snhf_atlas_rds <- "path/to/snHF_atlas.rds"   # EDIT: annotated snRNA-seq HF atlas (reference)
+```
+
 ```{r}
 library(Seurat)
 library(ggplot2)
@@ -9,44 +32,22 @@ library(Nebulosa)
 ```
 
 ```{r}
-Convert("./converted_for_seurat/Visium_1_CK279_control_P17.h5ad", dest = "h5seurat", overwrite = TRUE)
-Visium_1_CK279_control_P17 <- LoadH5Seurat("./converted_for_seurat/Visium_1_CK279_control_P17.h5seurat")
-```
-
-```{r}
-Convert("./converted_for_seurat/Visium_7_CK285_IZ_P10.h5ad", dest = "h5seurat", overwrite = TRUE)
-Visium_7_CK285_IZ_P10 <- LoadH5Seurat("./converted_for_seurat/Visium_7_CK285_IZ_P10.h5seurat")
-```
-
-```{r}
-Convert("./converted_for_seurat/Visium_12_CK290_FZ_P14.h5ad", dest = "h5seurat", overwrite = TRUE)
-Visium_12_CK290_FZ_P14 <- LoadH5Seurat("./converted_for_seurat/Visium_12_CK290_FZ_P14.h5seurat")
-```
-
-```{r}
-Convert("./converted_for_seurat/Visium_13_CK291_FZ_P18.h5ad", dest = "h5seurat", overwrite = TRUE)
-Visium_13_CK291_FZ_P18 <- LoadH5Seurat("./converted_for_seurat/Visium_13_CK291_FZ_P18.h5seurat")
-```
-
-```{r}
-Convert("./converted_for_seurat/Visium_19_CK297_GT_IZ_P9_rep2.h5ad", dest = "h5seurat", overwrite = TRUE)
-Visium_19_CK297_GT_IZ_P9_rep2 <- LoadH5Seurat("./converted_for_seurat/Visium_19_CK297_GT_IZ_P9_rep2.h5seurat")
-```
-
-```{r}
-Convert("./converted_for_seurat/Visium_20_CK298_IZ_P15.h5ad", dest = "h5seurat", overwrite = TRUE)
-Visium_20_CK298_IZ_P15 <- LoadH5Seurat("./converted_for_seurat/Visium_20_CK298_IZ_P15.h5seurat")
-```
-
-```{r}
-Convert("./converted_for_seurat/AKK002_157779_IZ_P3.h5ad", dest = "h5seurat", overwrite = TRUE)
-AKK002_157779_IZ_P3 <- LoadH5Seurat("./converted_for_seurat/AKK002_157779_IZ_P3.h5seurat")
-
-Convert("./converted_for_seurat/AKK002_157781_RZ_BZ_P3.h5ad", dest = "h5seurat", overwrite = TRUE)
-AKK002_157781_RZ_BZ_P3 <- LoadH5Seurat("./converted_for_seurat/AKK002_157781_RZ_BZ_P3.h5seurat")
-
-Convert("./converted_for_seurat/AKK002_157782_RZ_P3.h5ad", dest = "h5seurat", overwrite = TRUE)
-AKK002_157782_RZ_P3 <- LoadH5Seurat("./converted_for_seurat/AKK002_157782_RZ_P3.h5seurat")
+# Visium sections used for reference mapping (h5ad converted to h5seurat and loaded);
+# each section becomes an object named after its file
+sections <- c(
+  "Visium_1_CK279_control_P17",
+  "Visium_7_CK285_IZ_P10",
+  "Visium_12_CK290_FZ_P14",
+  "Visium_13_CK291_FZ_P18",
+  "Visium_19_CK297_GT_IZ_P9_rep2",
+  "Visium_20_CK298_IZ_P15",
+  "AKK002_157779_IZ_P3",
+  "AKK002_157781_RZ_BZ_P3",
+  "AKK002_157782_RZ_P3"
+)
+for (s in sections) {
+  assign(s, load_h5ad_as_seurat(file.path("./converted_for_seurat", paste0(s, ".h5ad"))))
+}
 ```
 
 ```{r}
@@ -105,7 +106,7 @@ AKK002_157782_RZ_P3 <- SCTransform(AKK002_157782_RZ_P3, assay = "RNA", verbose =
 
 # Ref Map to Human Global
 ```{r}
-sample <- readRDS("/Users/jamrute/Library/CloudStorage/Box-Box/Macbook_Files/Grad_School/Primary\ Projects/Amgen_ICM_CITEseq/Complete_atlas/annotate/snHF_atlas.rds")
+sample <- readRDS(snhf_atlas_rds)
 ```
 
 # Visium_1_CK279_control_P17
@@ -230,21 +231,7 @@ p_list[[length(p_list)]] + NoLegend()
 DefaultAssay(Visium_19_CK297_GT_IZ_P9_rep2) <- "SCT"
 expdata <- GetAssayData(Visium_19_CK297_GT_IZ_P9_rep2)
 Pop1 <- c("PI16","CCDC80", "FBLN1", "SVEP1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-Visium_19_CK297_GT_IZ_P9_rep2@meta.data$groundStatefib_z<-z_scores[1,]
+Visium_19_CK297_GT_IZ_P9_rep2@meta.data$groundStatefib_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "groundStatefib_z",pt.size=.5, reduction = 'spatial') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,2))
 ```
 # Myofib
@@ -252,21 +239,7 @@ FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "groundStatefib_z",
 DefaultAssay(Visium_19_CK297_GT_IZ_P9_rep2) <- "SCT"
 expdata <- GetAssayData(Visium_19_CK297_GT_IZ_P9_rep2)
 Pop1 <- c("ACTA2","TAGLN")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-Visium_19_CK297_GT_IZ_P9_rep2@meta.data$myofib_z<-z_scores[1,]
+Visium_19_CK297_GT_IZ_P9_rep2@meta.data$myofib_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "myofib_z",pt.size=.5, reduction = 'spatial') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,2))
 ```
 
@@ -275,21 +248,7 @@ FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "myofib_z",pt.size=
 DefaultAssay(Visium_19_CK297_GT_IZ_P9_rep2) <- "SCT"
 expdata <- GetAssayData(Visium_19_CK297_GT_IZ_P9_rep2)
 Pop1 <- c("CCL2","CCL11","THBS1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-Visium_19_CK297_GT_IZ_P9_rep2@meta.data$CCL2fib_z<-z_scores[1,]
+Visium_19_CK297_GT_IZ_P9_rep2@meta.data$CCL2fib_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "CCL2fib_z",pt.size=.5, reduction = 'spatial') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,2))
 ```
 
@@ -298,21 +257,7 @@ FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "CCL2fib_z",pt.size
 DefaultAssay(Visium_19_CK297_GT_IZ_P9_rep2) <- "SCT"
 expdata <- GetAssayData(Visium_19_CK297_GT_IZ_P9_rep2)
 Pop1 <- c("APOE","AGT","RGS5")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-Visium_19_CK297_GT_IZ_P9_rep2@meta.data$APOEfib_z<-z_scores[1,]
+Visium_19_CK297_GT_IZ_P9_rep2@meta.data$APOEfib_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "APOEfib_z",pt.size=.5, reduction = 'spatial') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,2))
 ```
 
@@ -321,21 +266,7 @@ FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "APOEfib_z",pt.size
 DefaultAssay(Visium_19_CK297_GT_IZ_P9_rep2) <- "SCT"
 expdata <- GetAssayData(Visium_19_CK297_GT_IZ_P9_rep2)
 Pop1 <- c("DLK1","GPX3")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-Visium_19_CK297_GT_IZ_P9_rep2@meta.data$DLK1fib_z<-z_scores[1,]
+Visium_19_CK297_GT_IZ_P9_rep2@meta.data$DLK1fib_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "DLK1fib_z",pt.size=.5, reduction = 'spatial') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,2))
 ```
 
@@ -344,21 +275,7 @@ FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "DLK1fib_z",pt.size
 DefaultAssay(Visium_19_CK297_GT_IZ_P9_rep2) <- "SCT"
 expdata <- GetAssayData(Visium_19_CK297_GT_IZ_P9_rep2)
 Pop1 <- c("PTGDS","GPC3")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-Visium_19_CK297_GT_IZ_P9_rep2@meta.data$PTGDSfib_z<-z_scores[1,]
+Visium_19_CK297_GT_IZ_P9_rep2@meta.data$PTGDSfib_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "PTGDSfib_z",pt.size=.5, reduction = 'spatial') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,2))
 ```
 
@@ -367,21 +284,7 @@ FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "PTGDSfib_z",pt.siz
 DefaultAssay(Visium_19_CK297_GT_IZ_P9_rep2) <- "SCT"
 expdata <- GetAssayData(Visium_19_CK297_GT_IZ_P9_rep2)
 Pop1 <- c("APOD","IGFBP5")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-Visium_19_CK297_GT_IZ_P9_rep2@meta.data$APODfib_z<-z_scores[1,]
+Visium_19_CK297_GT_IZ_P9_rep2@meta.data$APODfib_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "APODfib_z",pt.size=.5, reduction = 'spatial') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,2))
 ```
 # GDF15 Fib
@@ -389,21 +292,7 @@ FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "APODfib_z",pt.size
 DefaultAssay(Visium_19_CK297_GT_IZ_P9_rep2) <- "SCT"
 expdata <- GetAssayData(Visium_19_CK297_GT_IZ_P9_rep2)
 Pop1 <- c("ATF5","SLC3A2","TRIB3","GDF15")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-Visium_19_CK297_GT_IZ_P9_rep2@meta.data$GDF15fib_z<-z_scores[1,]
+Visium_19_CK297_GT_IZ_P9_rep2@meta.data$GDF15fib_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "GDF15fib_z",pt.size=.5, reduction = 'spatial') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,2))
 ```
 # POSTN/FAP Fib
@@ -411,21 +300,7 @@ FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "GDF15fib_z",pt.siz
 DefaultAssay(Visium_19_CK297_GT_IZ_P9_rep2) <- "SCT"
 expdata <- GetAssayData(Visium_19_CK297_GT_IZ_P9_rep2)
 Pop1 <- c("POSTN","COMP","FAP","COL1A1","THBS4","COL3A1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-Visium_19_CK297_GT_IZ_P9_rep2@meta.data$POSTNfib_z<-z_scores[1,]
+Visium_19_CK297_GT_IZ_P9_rep2@meta.data$POSTNfib_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "POSTNfib_z",pt.size=.5, reduction = 'spatial') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,2))
 ```
 
@@ -434,21 +309,7 @@ FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "POSTNfib_z",pt.siz
 DefaultAssay(Visium_19_CK297_GT_IZ_P9_rep2) <- "SCT"
 expdata <- GetAssayData(Visium_19_CK297_GT_IZ_P9_rep2)
 Pop1 <- c("ISG15", "MX1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-Visium_19_CK297_GT_IZ_P9_rep2@meta.data$IFNfib_z<-z_scores[1,]
+Visium_19_CK297_GT_IZ_P9_rep2@meta.data$IFNfib_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "IFNfib_z",pt.size=.5, reduction = 'spatial') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,2))
 ```
 # PLA2G2A
@@ -456,21 +317,7 @@ FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "IFNfib_z",pt.size=
 DefaultAssay(Visium_19_CK297_GT_IZ_P9_rep2) <- "SCT"
 expdata <- GetAssayData(Visium_19_CK297_GT_IZ_P9_rep2)
 Pop1 <- c("PLA2G2A", "CFD")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-Visium_19_CK297_GT_IZ_P9_rep2@meta.data$IFNfib_z<-z_scores[1,]
+Visium_19_CK297_GT_IZ_P9_rep2@meta.data$IFNfib_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=Visium_19_CK297_GT_IZ_P9_rep2, features = "IFNfib_z",pt.size=.5, reduction = 'spatial') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,2))
 ```
 

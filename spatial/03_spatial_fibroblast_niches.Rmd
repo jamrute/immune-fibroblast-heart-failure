@@ -1,3 +1,29 @@
+---
+title: "Visium: fibroblast states and immune programs in space"
+subtitle: "Amrute, Luo et al., Nature 635, 423-433 (2024) | doi:10.1038/s41586-024-08008-5"
+output: html_document
+---
+
+**Purpose.** Scores fibroblast state (F9, POSTN/FAP) and macrophage programs on the integrated Visium data, overlays pseudobulk fibroblast DE genes, computes PROGENy pathway activities and plots them across zones and time after MI.
+
+**Inputs.** `./kuppe_spatial_integrated.rds` (from `02`); fibroblast pseudobulk DE table (`human_citeseq/06`).
+
+**Outputs.** Feature plots and tables.
+
+**Run order.** Upstream: `02_spatial_integrate.R`. Downstream: none.
+
+Interactive analysis notebook: run chunk by chunk.
+
+```{r setup}
+## ---- Shared helpers, paths and output folders (EDIT) ----
+repo_dir <- ".."   # EDIT: root of this repository
+source(file.path(repo_dir, "R", "utils.R"))
+# packages used below that were not loaded in the original notebook
+library(progeny)
+library(Nebulosa)
+fib_pseudobulk_all_csv <- "path/to/Fibroblast_Donor_vs_HF_all_genes.csv"   # EDIT: from human_citeseq/06_pseudobulk_de.Rmd
+```
+
 ```{r}
 library(dplyr)
 library(Seurat)
@@ -56,25 +82,19 @@ DimPlot(sample, reduction = 'umap', group.by = 'SCT_snn_res.0.1', label.size = 4
 ```
 
 ```{r}
-ggplot(sample@meta.data, aes(x=disease, fill=SCT_snn_res.0.2)) + geom_bar(position = "fill") + theme_linedraw() + theme(axis.text.x = element_text(angle = 90)) +  scale_fill_manual(values=as.vector(paletteDiscrete(unique(sample$SCT_snn_res.0.2), set = "stallion"))) + theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.background = element_blank()) 
+plot_composition(sample@meta.data, x = "disease", fill = "SCT_snn_res.0.2",
+                 colors = as.vector(paletteDiscrete(unique(sample$SCT_snn_res.0.2), set = "stallion")))
 ```
 
 ```{r}
-ggplot(sample@meta.data, aes(x=region, fill=SCT_snn_res.0.2)) + geom_bar(position = "fill") + theme_linedraw() + theme(axis.text.x = element_text(angle = 90)) +  scale_fill_manual(values=as.vector(paletteDiscrete(unique(sample$SCT_snn_res.0.2), set = "stallion"))) + theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.background = element_blank()) 
+plot_composition(sample@meta.data, x = "region", fill = "SCT_snn_res.0.2",
+                 colors = as.vector(paletteDiscrete(unique(sample$SCT_snn_res.0.2), set = "stallion")))
 ```
 
 
 ```{r}
-ggplot(sample@meta.data, aes(x=days_postMI, fill=SCT_snn_res.0.2)) + geom_bar(position = "fill") + theme_linedraw() + theme(axis.text.x = element_text(angle = 90)) +  scale_fill_manual(values=as.vector(paletteDiscrete(unique(sample$SCT_snn_res.0.2), set = "stallion"))) + theme(axis.line = element_line(colour = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.background = element_blank()) 
+plot_composition(sample@meta.data, x = "days_postMI", fill = "SCT_snn_res.0.2",
+                 colors = as.vector(paletteDiscrete(unique(sample$SCT_snn_res.0.2), set = "stallion")))
 ```
 
 ```{r}
@@ -124,7 +144,7 @@ FeaturePlot(fibroblast, reduction = 'umap', features = "CD68") + scale_color_gra
 
 # Plot pseudobulk genes
 ```{r}
-pseudobulk_genes <- read.csv2("/Users/jamrute/Library/CloudStorage/Box-Box/Macbook_Files/Grad_School/Primary_Projects/Amgen_ICM_CITEseq/Human_CITEseq/pseudobulk/DE_analysis/HF_Donor/Fibroblast_Donor_vs_HF_all_genes.csv", header=TRUE, sep=',', row.names = 1)
+pseudobulk_genes <- read.csv2(fib_pseudobulk_all_csv, header=TRUE, sep=',', row.names = 1)
 
 pseudobulk_genes <- as.data.frame(pseudobulk_genes)
 pseudobulk_genes$log2FoldChange <- as.numeric(pseudobulk_genes$log2FoldChange)
@@ -146,7 +166,7 @@ FeaturePlot(object=fibroblast, features = "HFPseudobulk_z1",pt.size=.5, reductio
 ```
 
 ```{r}
-pseudobulk_genes <- read.csv2("/Users/jamrute/Library/CloudStorage/Box-Box/Macbook_Files/Grad_School/Primary_Projects/Amgen_ICM_CITEseq/Human_CITEseq/pseudobulk/DE_analysis/HF_Donor/Fibroblast_Donor_vs_HF_all_genes.csv", header=TRUE, sep=',', row.names = 1)
+pseudobulk_genes <- read.csv2(fib_pseudobulk_all_csv, header=TRUE, sep=',', row.names = 1)
 
 pseudobulk_genes <- as.data.frame(pseudobulk_genes)
 pseudobulk_genes$log2FoldChange <- as.numeric(pseudobulk_genes$log2FoldChange)
@@ -375,21 +395,7 @@ progeny_hmap = pheatmap(t(summarized_progeny_scores_df[,-1]),fontsize=14,
 DefaultAssay(sample) <- "SCT"
 expdata <- GetAssayData(sample)
 Pop1 <- c("POSTN","COMP","FAP","COL1A1","THBS4","COL3A1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-sample@meta.data$F9_z<-z_scores[1,]
+sample@meta.data$F9_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=sample, features = "F9_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1)) + NoLegend()
 ```
 
@@ -428,21 +434,7 @@ fibroblast <- sample
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("PI16","CCDC80", "FBLN1", "SVEP1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$groundStatefib_z<-z_scores[1,]
+fibroblast@meta.data$groundStatefib_z <- gene_set_zscore(expdata, Pop1)
 ```
 
 # Myofib
@@ -450,21 +442,7 @@ fibroblast@meta.data$groundStatefib_z<-z_scores[1,]
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("ACTA2","TAGLN")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$myofib_z<-z_scores[1,]
+fibroblast@meta.data$myofib_z <- gene_set_zscore(expdata, Pop1)
 ```
 
 # CCL2/THBS1
@@ -472,21 +450,7 @@ fibroblast@meta.data$myofib_z<-z_scores[1,]
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("CCL2","CCL11","THBS1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$CCL2fib_z<-z_scores[1,]
+fibroblast@meta.data$CCL2fib_z <- gene_set_zscore(expdata, Pop1)
 ```
 
 # APOE Fib
@@ -494,21 +458,7 @@ fibroblast@meta.data$CCL2fib_z<-z_scores[1,]
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("APOE","AGT","RGS5")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$APOEfib_z<-z_scores[1,]
+fibroblast@meta.data$APOEfib_z <- gene_set_zscore(expdata, Pop1)
 ```
 
 # DLK1 Fib
@@ -516,21 +466,7 @@ fibroblast@meta.data$APOEfib_z<-z_scores[1,]
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("DLK1","GPX3")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$DLK1fib_z<-z_scores[1,]
+fibroblast@meta.data$DLK1fib_z <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PTGDS Fib
@@ -538,21 +474,7 @@ fibroblast@meta.data$DLK1fib_z<-z_scores[1,]
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("PTGDS","GPC3")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$PTGDSfib_z<-z_scores[1,]
+fibroblast@meta.data$PTGDSfib_z <- gene_set_zscore(expdata, Pop1)
 ```
 
 # APOD Fib
@@ -560,21 +482,7 @@ fibroblast@meta.data$PTGDSfib_z<-z_scores[1,]
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("APOD","IGFBP5")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$APODfib_z<-z_scores[1,]
+fibroblast@meta.data$APODfib_z <- gene_set_zscore(expdata, Pop1)
 ```
 
 # GDF15 Fib
@@ -582,21 +490,7 @@ fibroblast@meta.data$APODfib_z<-z_scores[1,]
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("ATF5","SLC3A2","TRIB3","GDF15")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$GDF15fib_z<-z_scores[1,]
+fibroblast@meta.data$GDF15fib_z <- gene_set_zscore(expdata, Pop1)
 ```
 
 # POSTN/FAP Fib
@@ -604,21 +498,7 @@ fibroblast@meta.data$GDF15fib_z<-z_scores[1,]
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("POSTN","COMP","FAP","COL1A1","THBS4","COL3A1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$POSTNfib_z<-z_scores[1,]
+fibroblast@meta.data$POSTNfib_z <- gene_set_zscore(expdata, Pop1)
 ```
 
 # IFN
@@ -626,21 +506,7 @@ fibroblast@meta.data$POSTNfib_z<-z_scores[1,]
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("ISG15", "MX1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$IFNfib_z<-z_scores[1,]
+fibroblast@meta.data$IFNfib_z <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PLA2G2A
@@ -648,21 +514,7 @@ fibroblast@meta.data$IFNfib_z<-z_scores[1,]
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("PLA2G2A", "CFD")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$PLA2G2Afib_z<-z_scores[1,]
+fibroblast@meta.data$PLA2G2Afib_z <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PCOLCE2
@@ -670,21 +522,7 @@ fibroblast@meta.data$PLA2G2Afib_z<-z_scores[1,]
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("PCOLCE2", "IGFBP6")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$PCOLCE2fib_z<-z_scores[1,]
+fibroblast@meta.data$PCOLCE2fib_z <- gene_set_zscore(expdata, Pop1)
 ```
 
 # PRG4
@@ -692,21 +530,7 @@ fibroblast@meta.data$PCOLCE2fib_z<-z_scores[1,]
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("PRG4", "CXCL14")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$PRG4fib_z<-z_scores[1,]
+fibroblast@meta.data$PRG4fib_z <- gene_set_zscore(expdata, Pop1)
 ```
 
 ```{r}

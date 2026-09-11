@@ -1,59 +1,59 @@
+################################################################################
+# Multiome ATAC: build the ArchR project and add paired gene expression
+#
+# Paper : Amrute, Luo et al., Nature 635, 423-433 (2024) | doi:10.1038/s41586-024-08008-5
+# Part  : Single-nucleus multiome (paired RNA + ATAC)
+#
+# Purpose
+#   Creates the ArchR project from the per-sample ArrowFiles, keeps the nuclei
+#   retained in the annotated RNA object, adds the paired gene-expression matrix
+#   and transfers cell type, HF etiology and condition from the RNA analysis.
+#
+# Inputs
+#   metadata/multiome_samples.csv
+#   <arrow_dir>/<sample>/<sample>.arrow
+#   <counts_dir>/<batch>/<sample>/outs/filtered_feature_bc_matrix.h5
+#   Annotated multiome RNA object and its cell list (see Paths)
+#
+# Outputs
+#   ArchR project in <proj_dir> (Save-proj1)
+#
+# Run order
+#   Upstream  : 01_rna_merge_qc_integration.R (+ annotation)
+#   Downstream: 03-08 ArchR scripts
+################################################################################
+
 library(ArchR)
 addArchRGenome("hg38")
 library(Seurat)
 library(dplyr)
 
-################ QC and Generate the ArchR project after filtering and add gene expression matrix from paired scRNAseq data
+## ---- Paths (EDIT) ----
+repo_dir      <- ".."                                         # EDIT
+arrow_dir     <- "path/to/samplePostQC"                       # EDIT: <sample>/<sample>.arrow
+counts_dir    <- "path/to/Multiome/counts"                    # EDIT: Cell Ranger ARC runs
+rna_rds       <- "path/to/integrated/myocardium_multiome.rds" # EDIT: annotated multiome RNA
+cell_list_rds <- "path/to/integrated/myocardium_multiome_cellList"  # EDIT
+proj_dir      <- "path/to/analysis_batch_1_2_3/Save-proj1"    # EDIT: ArchR project output
+source(file.path(repo_dir, "R", "utils.R"))
 
-#Get input fragment files for each sample
-arrow_loc <- "/data/Junedh/Amgen_Epigenomics/analysis_batch_1_2_3/samplePostQC/"
+samples <- read_sample_sheet(file.path(repo_dir, "metadata", "multiome_samples.csv"))
 
-samples <- c("MA5","MA6","MA7","MA8","MA9","MA10","MA11","MA13","MA14","MA19","MA20","MA22","MA23","MA24","MA25",
-             "MA26","MA27","MA28","MA29","MA30","MA31","MA32","MA33")
-
-ArrowFiles <- c()
-
-for (s in samples) {
-  ArrowFiles <- c(ArrowFiles, paste(arrow_loc, s, "/", s, ".arrow", sep=""))
-}
-
+## ---- ArchR project from ArrowFiles (QC already applied when creating arrows) ----
+ArrowFiles <- file.path(arrow_dir, samples$sample, paste0(samples$sample, ".arrow"))
 proj1 <- ArchRProject(ArrowFiles, copyArrows = TRUE)
 
-scRNA <- readRDS("/data/Junedh/Amgen_Epigenomics/analysis_batch_1_2_3/RNA/globalObjectConstruction_batch1_2_3/integrated/myocardium_multiome.rds")
-col <- readRDS("/data/Junedh/Amgen_Epigenomics/analysis_batch_1_2_3/RNA/globalObjectConstruction_batch1_2_3/integrated/myocardium_multiome_cellList")
-
-#Isolate cells used in Seurat
+# Keep only nuclei present in the annotated RNA object
+scRNA <- readRDS(rna_rds)
+col <- readRDS(cell_list_rds)
 proj1 <- subsetCells(ArchRProj = proj1, cellNames = col)
 
-# GEX Matrix
-gene_matrix_files <- c()
-
-b1 <- c("MA5","MA6","MA7","MA8","MA9","MA10","MA11","MA13","MA14")
-b2 <- c("MA19","MA20","MA22","MA23","MA24","MA25","MA26","MA27","MA30","MA31","MA32","MA33")
-b3 <- c("MA28","MA29")
-
-
-# RNA input matrix
-for (s in samples) {
-  if (s %in% b1) {
-  rna_file <- c(paste("/data/Junedh/Amgen_ICM/Multiome/counts/Results/", s, "/outs/filtered_feature_bc_matrix.h5", sep=""))
-  } else if (s %in% b2) {
-  rna_file <- c(paste("/data/Junedh/Amgen_ICM/Multiome/counts/batch3/", s, "/outs/filtered_feature_bc_matrix.h5", sep=""))
-  } else if (s %in% b3) {
-  rna_file <- c(paste("/data/Junedh/Amgen_ICM/Multiome/counts/batch3_additional_sequencing/", s, "/outs/filtered_feature_bc_matrix.h5", sep=""))
-  }
-
-  gene_matrix_files <- c(gene_matrix_files, rna_file)
-}
-
-seRNA <- import10xFeatureMatrix(input = gene_matrix_files, names = samples)
-
-seRNAcombined<-cbind(assay(seRNA[[1]]), assay(seRNA[[2]]), assay(seRNA[[3]]), assay(seRNA[[4]]), assay(seRNA[[5]]), assay(seRNA[[6]]), assay(seRNA[[7]]),
-                     assay(seRNA[[8]]), assay(seRNA[[9]]), assay(seRNA[[10]]), assay(seRNA[[11]]), assay(seRNA[[12]]), assay(seRNA[[13]]), assay(seRNA[[14]]),
-                     assay(seRNA[[14]]), assay(seRNA[[15]]), assay(seRNA[[16]]), assay(seRNA[[17]]), assay(seRNA[[18]]), assay(seRNA[[19]]), assay(seRNA[[20]]),
-                     assay(seRNA[[21]]), assay(seRNA[[22]]), assay(seRNA[[23]]))
-
-seRNA2<-SummarizedExperiment(assays=list(counts=seRNAcombined), rowRanges= rowRanges(seRNA[[1]]))
+## ---- Paired gene-expression matrix ----
+seRNA <- import10xFeatureMatrix(input = multiome_matrix_paths(samples, counts_dir, h5 = TRUE),
+                                names = samples$sample)
+# One count matrix per sample, combined in sample order
+seRNAcombined <- do.call(cbind, lapply(seRNA, assay))
+seRNA2 <- SummarizedExperiment(assays = list(counts = seRNAcombined), rowRanges = rowRanges(seRNA[[1]]))
 
 proj1 <- addGeneExpressionMatrix(
   input = proj1,
@@ -68,17 +68,10 @@ proj1 <- addGeneExpressionMatrix(
   logFile = createLogFile("addGeneExpressionMatrix")
 )
 
-# Transfer cluster and identities from scRNA
-mappedCellType <- as.character(scRNA$predicted.celltype)
-HFetiology <- as.character(scRNA$HF.etiology)
-condition <- as.character(scRNA$condition)
+## ---- Transfer annotations from the RNA object ----
+# NOTE: assumes nuclei are in the same order in scRNA and proj1
+proj1$mappedCellType <- as.character(scRNA$predicted.celltype)
+proj1$HFetiology     <- as.character(scRNA$HF.etiology)
+proj1$condition      <- as.character(scRNA$condition)
 
-proj1$mappedCellType <- mappedCellType
-proj1$HFetiology <- HFetiology
-proj1$condition <- condition
-
-proj1 <- saveArchRProject(ArchRProj = proj1, outputDirectory = "/data/Junedh/Amgen_Epigenomics/analysis_batch_1_2_3/Save-proj1", load = TRUE)
-
-
-
-
+proj1 <- saveArchRProject(ArchRProj = proj1, outputDirectory = proj_dir, load = TRUE)

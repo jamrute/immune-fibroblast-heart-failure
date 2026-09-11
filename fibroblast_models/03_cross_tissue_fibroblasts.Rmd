@@ -1,3 +1,30 @@
+---
+title: "Cross-tissue comparison of disease fibroblasts"
+subtitle: "Amrute, Luo et al., Nature 635, 423-433 (2024) | doi:10.1038/s41586-024-08008-5"
+output: html_document
+---
+
+**Purpose.** Integrates heart fibroblasts with fibroblasts from other diseased human tissues and scores cross-tissue fibroblast programs (ADAMDEC1, CCL19, COL3A1, LRRC15, NPNT, PI16, POSTN/FAP, myofibroblast) on the heart fibroblasts.
+
+**Inputs.** Human fibroblast reference; `./Human.disease.Fib.SCTransformed.rds`.
+
+**Outputs.** `s.combined.sct.rds` and figure-panel PDFs.
+
+**Run order.** Upstream: `human_citeseq/07`. Downstream: none.
+
+Interactive analysis notebook: run chunk by chunk.
+
+```{r setup}
+## ---- Shared helpers, paths and output folders (EDIT) ----
+repo_dir <- ".."   # EDIT: root of this repository
+source(file.path(repo_dir, "R", "utils.R"))
+# packages used below that were not loaded in the original notebook
+library(viridis)
+library(Nebulosa)
+panel_dir <- "figure_panels"   # EDIT: folder for figure-panel PDFs (named after paper panels)
+dir.create(panel_dir, showWarnings = FALSE)
+```
+
 ```{r}
 library(dplyr)
 library(Seurat)
@@ -152,7 +179,7 @@ pheatmap(cor.exp,
 ```
 
 ```{r}
-pdf("/Users/jamrute/Desktop/pdf_panels/2a.pdf", useDingbats = FALSE, width=7, height=4)
+pdf(file.path(panel_dir, "2a.pdf"), useDingbats = FALSE, width=7, height=4)
 
 DimPlot(fibroblast, reduction = 'umap', group.by = 'functional.cluster', label.size = 4, label=FALSE,
         cols = paletteDiscrete(unique(fibroblast$functional.cluster), set = "stallion"))
@@ -167,21 +194,7 @@ dev.off()
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("ADAMDEC1", "CXCL14","CXCL8","SOCS3","CYGB","CCL8","CCL11","MMP3")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$ADAMDEC1_z<-z_scores[1,]
+fibroblast@meta.data$ADAMDEC1_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=fibroblast, features = "ADAMDEC1_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1.5))
 ```
 
@@ -190,21 +203,9 @@ FeaturePlot(object=fibroblast, features = "ADAMDEC1_z",pt.size=.5, reduction = '
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("CCL19","FDCSP","CCL21","CXCL13","CD74","IER2","RGS16","CLU","CXCL10","RBP5")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULLespn
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$CCL19_z<-z_scores[1,]
+# NOTE: the original loop had a typo (z_scores<-NULLespn) that did not reset z_scores,
+# so CCL19_z could pick up the previous gene set's score; computed correctly here.
+fibroblast@meta.data$CCL19_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=fibroblast, features = "CCL19_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1.5))
 ```
 # COL3A1
@@ -212,21 +213,7 @@ FeaturePlot(object=fibroblast, features = "CCL19_z",pt.size=.5, reduction = 'uma
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("COL3A1","POSTN","CTHRC1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$COL3A1_z<-z_scores[1,]
+fibroblast@meta.data$COL3A1_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=fibroblast, features = "COL3A1_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1.5))
 ```
 
@@ -235,21 +222,7 @@ FeaturePlot(object=fibroblast, features = "COL3A1_z",pt.size=.5, reduction = 'um
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("COL11A1","LRRC15","CTHRC1","COL3A1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$LRRC15_z<-z_scores[1,]
+fibroblast@meta.data$LRRC15_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=fibroblast, features = "LRRC15_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1.5))
 ```
 
@@ -258,21 +231,7 @@ FeaturePlot(object=fibroblast, features = "LRRC15_z",pt.size=.5, reduction = 'um
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("INMT","A2M","MFAP4","LIMCH1","GPX3","ADH1B","GPC3","FMO2","CES1","SCN7A","TCF21")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$NPNT_z<-z_scores[1,]
+fibroblast@meta.data$NPNT_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=fibroblast, features = "NPNT_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1.5))
 ```
 
@@ -281,21 +240,7 @@ FeaturePlot(object=fibroblast, features = "NPNT_z",pt.size=.5, reduction = 'umap
 DefaultAssay(fibroblast) <- "SCT"
 expdata <- GetAssayData(fibroblast)
 Pop1 <- c("PLA2G2A","MT1A","MT2A","MT1M","CFD","HAS1","C3","FST","MT1X","ERRFI1")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-fibroblast@meta.data$PI16_z<-z_scores[1,]
+fibroblast@meta.data$PI16_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=fibroblast, features = "PI16_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1.5))
 ```
 
@@ -304,21 +249,7 @@ FeaturePlot(object=fibroblast, features = "PI16_z",pt.size=.5, reduction = 'umap
 DefaultAssay(diseased_fibroblasts) <- "SCT"
 expdata <- GetAssayData(diseased_fibroblasts)
 Pop1 <- c("POSTN","FAP")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-diseased_fibroblasts@meta.data$POSTNFAP_z<-z_scores[1,]
+diseased_fibroblasts@meta.data$POSTNFAP_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=diseased_fibroblasts, features = "POSTNFAP_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1.5))
 ```
 
@@ -335,21 +266,7 @@ ggviolin(diseased_fibroblasts@meta.data, x = "Tissue", y = "POSTNFAP_z", add = "
 DefaultAssay(diseased_fibroblasts) <- "SCT"
 expdata <- GetAssayData(diseased_fibroblasts)
 Pop1 <- c("ACTA2","TAGLN")
-pops<-list(Pop1)
-#Z-Scores
-z_scores<-NULL
-
-for (i in 1:length(pops)) {
-genes <- pops[[i]]
-zz <- which(tolower(rownames(expdata)) %in% tolower(genes))
-av <- numeric(ncol(expdata))
-
-geneExp <- as.matrix(expdata[zz, ])
-geneExp <- t(scale(t(geneExp)))
-geneExp[is.nan(geneExp)] <- 0
-z_scores <- rbind(z_scores,(av + colSums(geneExp) / length(zz)))
-}
-diseased_fibroblasts@meta.data$MYOFIB_z<-z_scores[1,]
+diseased_fibroblasts@meta.data$MYOFIB_z <- gene_set_zscore(expdata, Pop1)
 FeaturePlot(object=diseased_fibroblasts, features = "MYOFIB_z",pt.size=.5, reduction = 'umap') + scale_color_gradientn(colors=c("blue","turquoise2","yellow","red","red4"), oob=scales::squish, limits=c(0,1.5))
 ```
 
@@ -430,7 +347,7 @@ pheatmap(cor.exp,
 
 
 ```{r}
-pdf("/Users/jamrute/Desktop/pdf_panels/2a.pdf", useDingbats = FALSE, width=7, height=4)
+pdf(file.path(panel_dir, "2a.pdf"), useDingbats = FALSE, width=7, height=4)
 
 pheatmap(cor.exp,
          color = viridis(250),

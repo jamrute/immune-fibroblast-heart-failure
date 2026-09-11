@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the article below."
+title: "Analysis code for: Targeting immune-fibroblast cell communication in heart failure"
+type: software
+authors:
+  - family-names: Amrute
+    given-names: Junedh M.
+    email: jamrute@wustl.edu
+license: MIT
+keywords:
+  - heart failure
+  - cardiac fibrosis
+  - fibroblasts
+  - IL-1 beta
+  - CITE-seq
+  - single-cell multiome
+  - spatial transcriptomics
+preferred-citation:
+  type: article
+  title: "Targeting immune-fibroblast cell communication in heart failure"
+  authors:
+    - family-names: Amrute
+      given-names: J. M.
+    - family-names: Luo
+      given-names: X.
+    - name: "et al."
+  journal: Nature
+  volume: 635
+  issue: 8038
+  start: 423
+  end: 433
+  year: 2024
+  doi: 10.1038/s41586-024-08008-5

@@ -1,9 +1,33 @@
+################################################################################
+# CITE-seq: weighted-nearest-neighbour (RNA + protein) clustering
+#
+# Paper : Amrute, Luo et al., Nature 635, 423-433 (2024) | doi:10.1038/s41586-024-08008-5
+#
+# Purpose
+#   Builds a WNN graph from Harmony-corrected RNA PCs and dsb protein values,
+#   clusters at several resolutions and computes WNN, RNA-only and protein-only UMAPs.
+#
+# Inputs
+#   normalized_harmony.rds  (from 03_harmony_integration.Rmd)
+#
+# Outputs
+#   clustered2.rds
+#
+# Run order
+#   Upstream  : 03_harmony_integration.Rmd
+#   Downstream: global annotation (not included) -> 05a
+################################################################################
+
 library(Seurat)
 library(dplyr)
 
-sample <- readRDS("/data/Junedh/Amgen_ICM/Human/pre_processing/normalized_harmony.rds")
+## ---- Paths (EDIT) ----
+in_rds <- "path/to/normalized_harmony.rds"   # EDIT: from 03_harmony_integration.Rmd
 
-# Replace Pdsb with psedo values
+sample <- readRDS(in_rds)
+
+# Use dsb protein values directly as the protein 'reduction' (excluding
+# isotype controls and failed antibodies, as in 02)
 pseudo = t(sample@assays$CITE@data)[,-c(150,181,220:222,242:245)]
 pseudo_colnames = paste('pseudo', c(1:149,151:180,182:219,223:241,246:279), sep = "_")
 colnames(pseudo) = pseudo_colnames
