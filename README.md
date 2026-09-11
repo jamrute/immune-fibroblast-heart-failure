@@ -129,8 +129,8 @@ Re-analysed public datasets include Visium sections of human myocardial infarcti
 ### Installation
 
 ```bash
-git clone https://github.com/jamrute/2024_Nature_IL1B_ImmuneFibroblast.git
-cd 2024_Nature_IL1B_ImmuneFibroblast
+git clone https://github.com/jamrute/immune-fibroblast-heart-failure.git
+cd immune-fibroblast-heart-failure
 Rscript environment/install_R_packages.R
 conda env create -f environment/environment_scrublet.yml
 ```
